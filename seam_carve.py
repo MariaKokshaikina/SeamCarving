@@ -15,12 +15,15 @@ class SeamCarve:
     def __init__(self,
                  image_path,
                  new_width,
+                 importance_map,
                  energy_function,
                  seam_map_function,
                  carve_function):
         
         self.initial_image = Image.open(image_path)
         self.image_name = os.path.splitext(os.path.basename(image_path))[0]
+
+        self.importance_map = importance_map
         
         self.original_width = np.asarray(self.initial_image).shape[1]
         self.new_width = new_width
@@ -45,7 +48,7 @@ class SeamCarve:
             img_gif = img.copy()
             
             start_time = time.clock()
-            energy = self.energy_function(img) 
+            energy = self.energy_function(img, self.importance_map)
             map_, backtrack = self.seam_map_function(img, energy)
             mask = self.carve_function(img, map_, backtrack)
             
