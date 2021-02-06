@@ -98,7 +98,6 @@ def carve_column_mask(img, m, backtrack):
     for i in reversed(range(r)):
         mask[i, j] = False
         j = backtrack[i, j]
-    mask = np.stack([mask] * 3, axis=2)
     
     return mask
 
