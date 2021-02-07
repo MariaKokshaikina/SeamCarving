@@ -61,7 +61,8 @@ class SeamCarve:
                 map_, backtrack = self.seam_map_function(img, energy)
                 mask = self.carve_function(img, map_, backtrack)
                 mask = np.stack([mask] * 3, axis=2)
-                energy = energy[mask[:, :, 0]].reshape((r, c - 1))
+                if energy is not None:
+                    energy = energy[mask[:, :, 0]].reshape((r, c - 1))
                 self.importance_map = self.importance_map[mask[:, :, 0]].reshape((r, c - 1))
                 img = img[mask].reshape((r, c - 1, 3))
                 self.time_by_step.append(time.clock() - start_time)
