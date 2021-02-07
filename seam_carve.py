@@ -153,7 +153,7 @@ class SeamCarve:
         return new_masks
 
 
-    def save_result(self, name_suffix, gif_fps=10):
+    def save_result(self, gif_fps=10):
 
         if not os.path.exists(IMAGES_DIR):
                 os.mkdir(IMAGES_DIR)
