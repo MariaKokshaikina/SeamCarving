@@ -83,6 +83,50 @@ def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy):
 def backward_energy(img,  importance_map,  mask, old_energy):
     return filters.sobel(color.rgb2gray(img))
 
-
+    
 def energy_function_forward(img,  importance_map,  mask, old_energy):
-    return None
+    
+    cache = {}
+    def D(x0,y0,x1,y1):
+        if x0 > x1:
+            x0, x1 = x1, x0
+            y0, y1 = y1, y0
+        elif x0 == x1 and y0 > y1:
+            y0, y1 = y1, y0                
+        key = (x0,y0, x1,y1)
+        if key not in cache:
+            val = np.sum(np.power(img[y0 % height, x0 % width] - img[y1 % height, x1 % width], 2))
+            cache[key] = val
+        return cache[key]
+    
+    def get_forward_energy_for_x_y(x0,y0):
+        return np.array([
+            D(x0,y0,x1,y1) + imp_cost
+            for (x1,y1) in [
+                (x0-1, y0+1), # 0
+                (x0,   y0+1), # 1
+                (x0+1, y0),   # 2
+                (x0+1, y0+1), # 3
+                (x0+2, y0),   # 4
+            ]
+        ])
+        
+    height = img.shape[0]
+    width = img.shape[1]
+    if(old_energy is None):
+        energy = np.empty((height, width, 5))
+    else:
+        energy = old_energy
+    if(not mask is None):
+        indices = np.where(mask[:,:,0] == False)
+        for y0 in range(len(indices[1])):
+            for x0 in range(max(0,indices[1][y0]-2), min(indices[1][y0]+2, width)):
+                imp_cost = importance_map[y0, x0] * IMPORTANCE_COEF
+                energy[y0,x0] = get_forward_energy_for_x_y(x0,y0)
+    else:
+        for y0 in range(height): 
+            for x0 in range(width):
+                imp_cost = importance_map[y0, x0] * IMPORTANCE_COEF
+                energy[y0, x0] = get_forward_energy_for_x_y(x0,y0)
+    
+    return energy
