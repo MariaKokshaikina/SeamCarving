@@ -1,5 +1,4 @@
 import numpy as np
-from tqdm.notebook import tqdm
 from PIL import Image
 import time
 import os
@@ -146,7 +145,7 @@ class SeamCarve:
                 gif0 = self.rotate_image(gif0, -90)
             self.images_for_gif.append(gif0)
 
-            for i in tqdm(range(np.abs(width_diff))):
+            for i in range(np.abs(width_diff)):
                 r, c, _ = img_tmp.shape
 
                 mask, energy, importance_map = self.get_seam_to_drop(img_tmp, mask, energy, importance_map)
