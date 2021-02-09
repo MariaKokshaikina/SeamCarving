@@ -21,6 +21,12 @@ def get_importance_map_from_borders(img, upper, bottom, left, right):
     return importance_map
 
 
+def rotate_image(image, angle):
+
+    rotated_img = imutils.rotate_bound(image, angle)
+    return rotated_img
+
+
 class SeamCarve:
 
     def __init__(self,
@@ -59,7 +65,12 @@ class SeamCarve:
     def run(self):
 
         img = np.asarray(self.initial_image)
-        initial_importance_map = self.importance_map
+
+        gif0 = np.empty((np.max([self.new_height, self.original_height]),
+                         np.max([self.new_width, self.original_width]), 3), dtype=np.uint8)
+        gif0.fill(255)
+        gif0[:self.original_height, :self.original_width] = img
+        self.images_for_gif.append(gif0)
 
         width_diff = self.original_width - self.new_width
         height_diff = self.original_height - self.new_height
@@ -70,33 +81,36 @@ class SeamCarve:
             img = self.resize_img_width(img, width_diff, rotated=False)
 
         if height_diff != 0:
-            rotated_img = self.rotate_image(img, 90)
+            rotated_img = rotate_image(img, 90)
             self.importance_map = self.importance_map.T
             img = self.resize_img_width(rotated_img, height_diff, rotated=True)
-            img = self.rotate_image(img, -90)
+            img = rotate_image(img, -90)
 
         self.final_image = Image.fromarray(img.astype(np.uint8))
 
-    def rotate_image(self, image, angle):
+    def get_seam_to_drop(self, img, prev_mask, prev_energy):
 
-        rotated_img = imutils.rotate_bound(image, angle)
-        return rotated_img
+        energy_map = self.energy_function(img, self.importance_map, prev_mask, prev_energy)
+        map_, backtrack = self.seam_map_function(img, energy_map)
+        mask = self.carve_function(img, map_, backtrack)
 
-    def get_seam_to_drop(self, img, mask, energy, importance_map):
+        return mask, energy_map
+
+    def drop_seam(self, img, mask, energy, importance_map):
 
         r, c, _ = img.shape
 
-        energy = self.energy_function(img, self.importance_map, mask, energy)
-        map_, backtrack = self.seam_map_function(img, energy)
-        mask = self.carve_function(img, map_, backtrack)
-
         try:
             energy = energy[mask].reshape((r, c - 1))
-        except ValueError:
+        except (ValueError, TypeError):
             energy = energy[mask].reshape((r, c - 1, 5))  # for forward energy, todo: come up with smth better
+
         importance_map = importance_map[mask].reshape((r, c - 1))
 
-        return mask, energy, importance_map
+        mask = np.stack([mask] * 3, axis=2)
+        img_new = img[mask].reshape((r, c - 1, 3))
+
+        return img_new, energy, importance_map
 
     def resize_img_width(self, img, width_diff, rotated=False):
 
@@ -109,27 +123,26 @@ class SeamCarve:
             for i in range(width_diff):
 
                 img_gif = img.copy()
-                r, c, _ = img.shape
 
                 try:
                     start_time = time.clock()
                 except AttributeError:
                     start_time = time.time()
-                mask, energy, importance_map = self.get_seam_to_drop(img, mask, energy, importance_map)
-                mask = np.stack([mask] * 3, axis=2)
 
-                img = img[mask].reshape((r, c - 1, 3))
+                mask, energy = self.get_seam_to_drop(img, mask, energy)
+                img, energy, importance_map = self.drop_seam(img, mask, energy, importance_map)
+
                 try:
                     self.time_by_step.append(time.clock() - start_time)
                 except AttributeError:
                     self.time_by_step.append(time.time() - start_time)
 
-                img_gif[mask[:, :, 0] == False] = (255, 0, 0)
+                img_gif[np.stack([mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
+
                 if rotated:
-                    self.images_for_gif.extend([self.rotate_image(img_gif, -90)])  # ,
-                #                                                 self.rotate_image(img, -90)])
+                    self.images_for_gif.append(rotate_image(img_gif, -90))
                 else:
-                    self.images_for_gif.extend([img_gif])  # , img])
+                    self.images_for_gif.append(img_gif)
 
             self.importance_map = importance_map
 
@@ -138,21 +151,11 @@ class SeamCarve:
             img_tmp = img.copy()
             masks = []
 
-            gif0 = np.empty((img_tmp.shape[0], np.abs(width_diff), 3), dtype=np.uint8)
-            gif0.fill(255)
-            gif0 = np.concatenate((img_tmp, gif0), axis=1)
-            if rotated:
-                gif0 = self.rotate_image(gif0, -90)
-            self.images_for_gif.append(gif0)
-
             for i in range(np.abs(width_diff)):
-                r, c, _ = img_tmp.shape
 
-                mask, energy, importance_map = self.get_seam_to_drop(img_tmp, mask, energy, importance_map)
+                mask, energy = self.get_seam_to_drop(img_tmp, mask, energy)
                 masks.append(mask)
-
-                mask = np.stack([mask] * 3, axis=2)
-                img_tmp = img_tmp[mask].reshape((r, c - 1, 3))
+                img_tmp, energy, importance_map = self.drop_seam(img_tmp, mask, energy, importance_map)
 
             while len(masks) > 0:
 
@@ -165,10 +168,9 @@ class SeamCarve:
                 self.importance_map = self.update_importance_map(current_mask)
 
                 if rotated:
-                    self.images_for_gif.extend([self.rotate_image(img_gif, -90)])  # ,
-                #                                                 self.rotate_image(img, -90)])
+                    self.images_for_gif.append(rotate_image(img_gif, -90))
                 else:
-                    self.images_for_gif.extend([img_gif])  # , img])
+                    self.images_for_gif.append(img_gif)
 
                 masks = self.update_mask(current_mask, masks)
 

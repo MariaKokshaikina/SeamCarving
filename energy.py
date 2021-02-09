@@ -31,7 +31,7 @@ def energy_gradient(img, importance_map, mask, old_energy):
     else:
         energy = old_energy
     if mask is not None:
-        indices = np.where(mask[:, :, 0] == False)
+        indices = np.where(mask == False)
         for i in range(len(indices[1])):
             for j in range(max(0, indices[1][i] - 2), min(indices[1][i] + 2, width)):
                 energy[i, j] = energy_gradient_for_i_j(img, i, j, importance_map)
@@ -71,7 +71,7 @@ def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy):
         gradient_magnitude = np.sqrt(np.square(new_image_x) + np.square(new_image_y))
     else:
         energy = old_energy
-        indices = np.where(mask[:, :, 0] == False)
+        indices = np.where(mask == False)
         for i in range(len(indices[1])):
             for j in range(max(0, indices[1][i] - 2), min(indices[1][i] + 2, width)):
                 energy[i, j] = sobel_operator_for_i_j(image, importance_map, i, j, filter_)
@@ -119,7 +119,7 @@ def energy_function_forward(img, importance_map, mask, old_energy):
     else:
         energy = old_energy
     if mask is not None:
-        indices = np.where(mask[:, :, 0] == False)
+        indices = np.where(mask == False)
         for y0 in range(len(indices[1])):
             for x0 in range(max(0, indices[1][y0] - 2), min(indices[1][y0] + 2, width)):  # todo: check
                 imp_cost = importance_map[y0, x0] * IMPORTANCE_COEF
