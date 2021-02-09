@@ -97,7 +97,7 @@ class SeamCarve:
         try:
             energy = energy[mask].reshape((r, c - 1))
         except ValueError:
-            energy = energy[mask].reshape((r, c - 1, 5)) # for forward energy
+            energy = energy[mask].reshape((r, c - 1, 5)) # for forward energy, todo: come up with smth better
         importance_map = importance_map[mask].reshape((r, c - 1))
         
         return mask, energy, importance_map
@@ -253,7 +253,7 @@ class SeamCarve:
                          f'_w{self.original_width}to{self.new_width}'
                          f'_h{self.original_height}to{self.new_height}'
                          f'_{self.name_suffix}.gif',
-                         self.images_for_gif, fps=gif_fps)
+                         map(lambda x: x.astype(np.uint8), self.images_for_gif), fps=gif_fps)
 
     def show_gif(self):
         import base64

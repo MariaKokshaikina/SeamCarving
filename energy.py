@@ -5,7 +5,6 @@ import math
 
 IMPORTANCE_COEF = 100000
 
-
 def color_to_gray(img):
     return (img[:, :, 0] + img[:, :, 1] + img[:, :, 2]) / 3.0
 
@@ -86,7 +85,7 @@ def backward_energy(img,  importance_map,  mask, old_energy):
     
 def energy_function_forward(img,  importance_map,  mask, old_energy):
     
-    cache = {}
+    cache = {}  # todo: check if it's not useless
     def D(x0,y0,x1,y1):
         if x0 > x1:
             x0, x1 = x1, x0
@@ -120,7 +119,7 @@ def energy_function_forward(img,  importance_map,  mask, old_energy):
     if(not mask is None):
         indices = np.where(mask[:,:,0] == False)
         for y0 in range(len(indices[1])):
-            for x0 in range(max(0,indices[1][y0]-2), min(indices[1][y0]+2, width)):
+            for x0 in range(max(0,indices[1][y0]-2), min(indices[1][y0]+2, width)):  # todo: check 
                 imp_cost = importance_map[y0, x0] * IMPORTANCE_COEF
                 energy[y0,x0] = get_forward_energy_for_x_y(x0,y0)
     else:

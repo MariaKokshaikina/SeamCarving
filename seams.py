@@ -30,15 +30,6 @@ def seam_map_function_forward(img, energy):
     height = img.shape[0]
     width = img.shape[1]
 
-#     @lru_cache(maxsize=1000)#img.shape[0] * img.shape[1])
-#     def D(x0,y0,x1,y1):
-#         try:
-#             return np.sum(np.power(img[y0 % height, x0 % width] - img[y1 % height, x1 % width], 2))
-#         except IndexError:
-#             print(img.shape, x0,y0,x1,y1)
-#             raise IndexError
-    
-#     @lru_cache(maxsize=img.shape[0] * img.shape[1])
     def CL(x,y):
         if x == y == 0:
             return 0
@@ -46,26 +37,19 @@ def seam_map_function_forward(img, energy):
             return 0
         elif x == 0:
             return energy[y][0][2] + energy[y-1][0][1]
-#             return D(0,y,1,y) + D(0,y-1,0,y)
         else:
             return energy[y][x-1][4] + energy[y-1][x][0]
-#             return D(x-1,y,x+1,y) + D(x,y-1,x-1,y)
     
-#     @lru_cache(maxsize=img.shape[0] * img.shape[1])
     def CU(x,y):
         if x == y == 0:
             return 0
         elif y == 0:
             return energy[0][x-1][4]
-#             return D(x-1, 0, x+1,0)
         elif x == 0:
             return energy[y][0][2]
-#             return D(0,y,1,y)
         else:
             return energy[y][x-1][4]
-#             return D(x-1,y,x+1,y)
 
-#     @lru_cache(maxsize=img.shape[0] * img.shape[1])
     def CR(x,y):
         if x == y == 0:
             return 0
@@ -73,10 +57,8 @@ def seam_map_function_forward(img, energy):
             return 0
         elif x == 0:
             return energy[y][0][2] + energy[y-1][0][3]
-#             return D(0,y,1,y) + D(0,y-1,1,y)
         else:
             return energy[y][x-1][4] + energy[y-1][x][3]
-#             return D(x-1,y,x+1,y) + D(x,y-1,x+1,y)
 
     M = np.empty((img.shape[0], img.shape[1]))
     backtrack = np.zeros_like(M, dtype=np.int)
