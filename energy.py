@@ -49,17 +49,12 @@ def get_value_by_index_or_zero(array, i, j):
         return array[i, j]
 
 
-def sobel_operator_for_i_j(img, importance_map, i, j, filter):
-    result_x = 0
-    result_y = 0
-    r, c = filter.shape
-    for ii in range(r):
-        for jj in range(c):
-            result_x += get_value_by_index_or_zero(img, i + ii - r + 1, j + jj - c + 1) * filter[ii, jj]
-            result_y += get_value_by_index_or_zero(img, i + ii - r + 1, j + jj - c + 1) * filter.T[ii, jj]
-
-    return math.sqrt(result_x ** 2 + result_y ** 2) + importance_map[i, j] * IMPORTANCE_COEF
-
+def sobel_operator_for_i_j(img, importance_map, i, j):
+    gx = (img[i - 1][j - 1] + 2 * img[i][j - 1] + img[i + 1][j - 1]) - (
+                img[i - 1][j + 1] + 2 * img[i][j + 1] + img[i + 1][j + 1])
+    gy = (img[i - 1][j - 1] + 2 * img[i - 1][j] + img[i - 1][j + 1]) - (
+                img[i + 1][j - 1] + 2 * img[i + 1][j] + img[i + 1][j + 1])
+    return np.sqrt(gx ** 2 + gy ** 2) + importance_map[i, j] * IMPORTANCE_COEF
 
 def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy):
     image = color_to_gray(img)
@@ -74,7 +69,7 @@ def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy):
         indices = np.where(mask == False)
         for i in range(len(indices[1])):
             for j in range(max(0, indices[1][i] - 2), min(indices[1][i] + 2, width)):
-                energy[i, j] = sobel_operator_for_i_j(image, importance_map, i, j, filter_)
+                energy[i, j] = sobel_operator_for_i_j(image, importance_map, i, j)
         gradient_magnitude = energy  # np.sqrt(np.square(energy_x) + np.square(energy_y))
     gradient_magnitude *= 255.0 / gradient_magnitude.max()
 
