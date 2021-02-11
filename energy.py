@@ -24,7 +24,11 @@ def energy_gradient_for_i_j(img, i, j, importance_map):
     return np.sqrt(dx_sq + dy_sq) + importance_map[i, j] * IMPORTANCE_COEF
 
 
-def energy_gradient(img, importance_map, mask, old_energy):
+def energy_gradient_for_i_j_proxy(args):
+    return energy_gradient_for_i_j(*args), args
+
+
+def energy_gradient(img, importance_map, mask, old_energy, pool):
     height = img.shape[0]
     width = img.shape[1]
     if old_energy is None:
@@ -33,13 +37,28 @@ def energy_gradient(img, importance_map, mask, old_energy):
         energy = old_energy
     if mask is not None:
         indices = np.where(mask == False)
-        for i in range(len(indices[1])):
-            for j in range(max(0, indices[1][i] - 2), min(indices[1][i] + 2, width)):
-                energy[i, j] = energy_gradient_for_i_j(img, i, j, importance_map)
+        a = [
+            (img, i, j, importance_map)
+            for i in range(len(indices[1]))
+            for j in range(max(0, indices[1][i] - 2), min(indices[1][i] + 2, width))
+        ]
+        result = pool.map(energy_gradient_for_i_j_proxy, a)
+        for res, args in result:
+            i, j = args[1], args[2]
+            energy[i, j] = res
+        #for i in range(len(indices[1])):
+        #    for j in range(max(0, indices[1][i] - 2), min(indices[1][i] + 2, width)):
+        #        energy[i, j] = energy_gradient_for_i_j(img, i, j, importance_map)
     else:
-        for i in range(height):
-            for j in range(width):
-                energy[i, j] = energy_gradient_for_i_j(img, i, j, importance_map)
+        a = [
+           (img, i, j, importance_map)
+            for i in range(height)
+            for j in range(width)
+        ]
+        result = pool.map(energy_gradient_for_i_j_proxy, a)
+        for res, args in result:
+            i, j = args[1], args[2]
+            energy[i, j] = res
     return energy
 
 
@@ -51,13 +70,14 @@ def get_value_by_index_or_zero(array, i, j):
 
 
 def sobel_operator_for_i_j(img, importance_map, i, j):
-    gx = (img[i - 1][j - 1] + 2 * img[i][j - 1] + img[i + 1][j - 1]) - (
-                img[i - 1][j + 1] + 2 * img[i][j + 1] + img[i + 1][j + 1])
-    gy = (img[i - 1][j - 1] + 2 * img[i - 1][j] + img[i - 1][j + 1]) - (
-                img[i + 1][j - 1] + 2 * img[i + 1][j] + img[i + 1][j + 1])
+    gx = (get_value_by_index_or_zero(img,i - 1,j - 1) + 2 * get_value_by_index_or_zero(img,i,j - 1) + get_value_by_index_or_zero(img,i + 1,j - 1)) - (
+                get_value_by_index_or_zero(img,i - 1,j + 1) + 2 * get_value_by_index_or_zero(img,i,j + 1) + get_value_by_index_or_zero(img,i + 1,j + 1))
+    gy = (get_value_by_index_or_zero(img,i - 1,j - 1) + 2 * get_value_by_index_or_zero(img,i - 1,j) + get_value_by_index_or_zero(img,i - 1,j + 1)) - (
+                get_value_by_index_or_zero(img,i + 1,j - 1) + 2 * get_value_by_index_or_zero(img,i + 1,j) + get_value_by_index_or_zero(img,i + 1,j + 1))
     return np.sqrt(gx ** 2 + gy ** 2) + importance_map[i, j] * IMPORTANCE_COEF
 
-def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy):
+
+def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy, pool):
     image = color_to_gray(img)
     filter_ = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
     width = img.shape[1]
@@ -77,11 +97,11 @@ def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy):
     return gradient_magnitude
 
 
-def backward_energy(img, importance_map, mask, old_energy):
+def backward_energy(img, importance_map, mask, old_energy, pool):
     return filters.sobel(color.rgb2gray(img))
 
 @jit
-def energy_function_forward(img, importance_map, mask, old_energy):
+def energy_function_forward(img, importance_map, mask, old_energy, pool):
     cache = {}  # todo: check if it's not useless
 
     def D(x0, y0, x1, y1):
