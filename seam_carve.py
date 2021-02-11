@@ -3,6 +3,7 @@ from PIL import Image
 import time
 import os
 import imageio
+from multiprocessing import Pool
 import imutils
 
 GIFS_DIR = 'gifs'
@@ -61,6 +62,8 @@ class SeamCarve:
         self.final_image = None
 
         self.images_for_gif = []
+        self.pool = Pool(processes = 5)
+
 
     def run(self):
 
@@ -90,7 +93,7 @@ class SeamCarve:
 
     def get_seam_to_drop(self, img, prev_mask, prev_energy):
 
-        energy_map = self.energy_function(img, self.importance_map, prev_mask, prev_energy)
+        energy_map = self.energy_function(img, self.importance_map, prev_mask, prev_energy, self.pool)
         map_, backtrack = self.seam_map_function(img, energy_map)
         mask = self.carve_function(img, map_, backtrack)
 
