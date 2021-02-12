@@ -37,7 +37,8 @@ class SeamCarve:
                  energy_function,
                  seam_map_function,
                  carve_function,
-                 name_suffix):
+                 name_suffix,
+                 save_gif=False):
 
         self.initial_image = Image.open(image_path)
         self.image_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -61,19 +62,20 @@ class SeamCarve:
         self.time_by_step = []
         self.final_image = None
 
+        self.save_gif = save_gif
         self.images_for_gif = []
         self.pool = Pool(processes = 5)
-
 
     def run(self):
 
         img = np.asarray(self.initial_image)
 
-        gif0 = np.empty((np.max([self.new_height, self.original_height]),
-                         np.max([self.new_width, self.original_width]), 3), dtype=np.uint8)
-        gif0.fill(255)
-        gif0[:self.original_height, :self.original_width] = img
-        self.images_for_gif.append(gif0)
+        if self.save_gif:
+            gif0 = np.empty((np.max([self.new_height, self.original_height]),
+                             np.max([self.new_width, self.original_width]), 3), dtype=np.uint8)
+            gif0.fill(255)
+            gif0[:self.original_height, :self.original_width] = img
+            self.images_for_gif.append(gif0)
 
         width_diff = self.original_width - self.new_width
         height_diff = self.original_height - self.new_height
@@ -125,7 +127,8 @@ class SeamCarve:
 
             for i in range(width_diff):
 
-                img_gif = img.copy()
+                if self.save_gif:
+                    img_gif = img.copy()
 
                 try:
                     start_time = time.clock()
@@ -140,12 +143,13 @@ class SeamCarve:
                 except AttributeError:
                     self.time_by_step.append(time.time() - start_time)
 
-                img_gif[np.stack([mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
+                if self.save_gif:
+                    img_gif[np.stack([mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
 
-                if rotated:
-                    self.images_for_gif.append(rotate_image(img_gif, -90))
-                else:
-                    self.images_for_gif.append(img_gif)
+                    if rotated:
+                        self.images_for_gif.append(rotate_image(img_gif, -90))
+                    else:
+                        self.images_for_gif.append(img_gif)
 
             self.importance_map = importance_map
 
@@ -164,16 +168,18 @@ class SeamCarve:
 
                 current_mask = masks.pop(0)
 
-                img_gif = img.copy()
-                img_gif[np.stack([current_mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
+                if self.save_gif:
+                    img_gif = img.copy()
+                    img_gif[np.stack([current_mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
 
                 img = self.add_seam_to_img(img, current_mask)
                 self.importance_map = self.update_importance_map(current_mask)
 
-                if rotated:
-                    self.images_for_gif.append(rotate_image(img_gif, -90))
-                else:
-                    self.images_for_gif.append(img_gif)
+                if self.save_gif:
+                    if rotated:
+                        self.images_for_gif.append(rotate_image(img_gif, -90))
+                    else:
+                        self.images_for_gif.append(img_gif)
 
                 masks = self.update_mask(current_mask, masks)
 
@@ -244,11 +250,14 @@ class SeamCarve:
         img_filename = f'{IMAGES_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.jpg'
         self.final_image.save(img_filename)
 
-        if not os.path.exists(GIFS_DIR):
-            os.mkdir(GIFS_DIR)
+        if self.save_gif:
+            if not os.path.exists(GIFS_DIR):
+                os.mkdir(GIFS_DIR)
 
-        gif_filename = f'{GIFS_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.gif'
-        imageio.mimwrite(gif_filename, map(lambda x: x.astype(np.uint8), self.images_for_gif), fps=gif_fps)
+            gif_filename = f'{GIFS_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.gif'
+            imageio.mimwrite(gif_filename, map(lambda x: x.astype(np.uint8), self.images_for_gif), fps=gif_fps)
+        else:
+            gif_filename = None
 
         return img_filename, gif_filename
 

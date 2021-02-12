@@ -13,9 +13,22 @@ import os
 
 if __name__ == '__main__':
 
-    DATASET_DIR = 'dataset'
+    # MAX_SIZE = 500
+    #
+    # if not os.path.exists('dataset_500'):
+    #     os.mkdir('dataset_500')
+    #
+    # for filename in os.listdir('dataset'):
+    #     img = Image.open(os.path.join('dataset', filename))
+    #     w, h = img._size
+    #     coef = MAX_SIZE / max(w, h)
+    #     new_size = w * coef, h * coef
+    #     img.thumbnail(new_size)
+    #     img.save(os.path.join('dataset_500', filename))
+
+    DATASET_DIR = 'dataset_500'
     result = []
-    for filename in os.listdir(DATASET_DIR):
+    for filename in sorted(os.listdir(DATASET_DIR)):
         img_path = os.path.join(DATASET_DIR, filename)
         img = Image.open(img_path)
         shape = np.array(img).shape
