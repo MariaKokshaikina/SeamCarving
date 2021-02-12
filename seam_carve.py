@@ -3,8 +3,8 @@ from PIL import Image
 import time
 import os
 import imageio
-from multiprocessing import Pool
 import imutils
+from multiprocessing import Pool
 
 GIFS_DIR = 'gifs'
 IMAGES_DIR = 'images'
@@ -62,7 +62,7 @@ class SeamCarve:
         self.final_image = None
 
         self.images_for_gif = []
-        self.pool = Pool(processes = 5)
+        self.pool = Pool(processes = 8)
 
 
     def run(self):
@@ -85,7 +85,7 @@ class SeamCarve:
 
         if height_diff != 0:
             rotated_img = rotate_image(img, 90)
-            self.importance_map = rotate_image(self.importance_map, 90)
+            self.importance_map = self.importance_map.T
             img = self.resize_img_width(rotated_img, height_diff, rotated=True)
             img = rotate_image(img, -90)
 
