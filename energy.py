@@ -6,11 +6,11 @@ from numba import jit
 
 IMPORTANCE_COEF = 100000
 
-@jit
+#@jit
 def color_to_gray(img):
     return (img[:, :, 0] + img[:, :, 1] + img[:, :, 2]) / 3.0
 
-@jit
+#@jit
 def energy_gradient_for_i_j(img, i, j, importance_map):
     height = img.shape[0]
     width = img.shape[1]
@@ -100,7 +100,7 @@ def gradient_magnitude_sobel_operator(img, importance_map, mask, old_energy, poo
 def backward_energy(img, importance_map, mask, old_energy, pool):
     return filters.sobel(color.rgb2gray(img))
 
-@jit
+#@jit
 def energy_function_forward(img, importance_map, mask, old_energy, pool):
     cache = {}  # todo: check if it's not useless
 
