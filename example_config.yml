@@ -1,0 +1,6 @@
+dataset_dir: /home/mariiak/Documents/UCU/SeamCarving/dataset_500
+output_dir: /home/mariiak/Documents/UCU/SeamCarving/images
+gifs_dir: /home/mariiak/Documents/UCU/SeamCarving/gifs
+stats_dir: /home/mariiak/Documents/UCU/SeamCarving/stats
+
+pool_processes: 4
