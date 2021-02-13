@@ -6,8 +6,14 @@ import imageio
 import imutils
 from multiprocessing import Pool
 
-GIFS_DIR = 'gifs'
-IMAGES_DIR = 'images'
+from utils import get_config
+
+config = get_config()
+
+GIFS_DIR = config['gifs_dir']
+IMAGES_DIR = config['output_dir']
+
+POOL_PROCESSES = config['pool_processes']
 
 
 def get_importance_map_from_borders(img, upper, bottom, left, right):
@@ -64,7 +70,7 @@ class SeamCarve:
 
         self.save_gif = save_gif
         self.images_for_gif = []
-        self.pool = Pool(processes = 8)
+        self.pool = Pool(processes=POOL_PROCESSES)
 
     def run(self):
 

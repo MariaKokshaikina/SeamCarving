@@ -12,6 +12,10 @@ from PIL import Image
 
 import os
 
+from utils import get_config
+
+config = get_config()
+
 if __name__ == '__main__':
 
     # MAX_SIZE = 500
@@ -27,8 +31,16 @@ if __name__ == '__main__':
     #     img.thumbnail(new_size)
     #     img.save(os.path.join('dataset_500', filename))
 
-    DATASET_DIR = 'dataset_500'
-    result_filename = f'result_{datetime.now()}.csv'
+    DATASET_DIR = config['dataset_dir']
+    if not os.path.exists(DATASET_DIR):
+        print('Dataset dir doesn\'t exist, exit(0)')
+        exit(0)
+
+    STATS_DIR = config['stats_dir']
+    if not os.path.exists(STATS_DIR):
+        os.mkdir(STATS_DIR)
+
+    result_filename = os.path.join(STATS_DIR, f'result_{datetime.now()}.csv')
     result = []
 
     experiments = []
@@ -74,7 +86,9 @@ if __name__ == '__main__':
                 seam_map_function=seam_map_function,
                 carve_function=carve_column_mask,
                 importance_map=None,
-                name_suffix=energy_function.__name__)
+                name_suffix=energy_function.__name__,
+                # save_gif=True,
+            )
 
             if os.path.exists(seamCarve.get_new_img_filename()):
                 continue
@@ -93,8 +107,6 @@ if __name__ == '__main__':
                 'new_filename': new_img_filename,
                 'time': (time_end - time_start).microseconds,
             })
-
-            # print(result[-1])
 
     except Exception as e:
         result = pd.DataFrame(result)
