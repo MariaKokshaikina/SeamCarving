@@ -91,6 +91,110 @@ class SeamCarve:
 
         self.final_image = Image.fromarray(img.astype(np.uint8))
 
+    def run_with_multiple_seam_drop(self):
+        img = np.asarray(self.initial_image)
+
+        gif0 = np.empty((np.max([self.new_height, self.original_height]),
+                         np.max([self.new_width, self.original_width]), 3), dtype=np.uint8)
+        gif0.fill(255)
+        gif0[:self.original_height, :self.original_width] = img
+        self.images_for_gif.append(gif0)
+
+        width_diff = self.original_width - self.new_width
+        height_diff = self.original_height - self.new_height
+
+        # todo: think about alternate resizing width and height
+
+        if width_diff != 0:
+            img = self.resize_img_width(img, width_diff, rotated=False)
+
+        if height_diff != 0:
+            rotated_img = rotate_image(img, 90)
+            self.importance_map = self.importance_map.T
+            img = self.resize_img_width(rotated_img, height_diff, rotated=True)
+            img = rotate_image(img, -90)
+
+        self.final_image = Image.fromarray(img.astype(np.uint8))
+
+    def resize_img_width_with_multiple_seam_drop(self, img, width_diff, rotated=False):
+
+        energy = None
+        mask = None
+        importance_map = self.importance_map
+
+        if width_diff > 0:
+            seams_removed = 0
+
+            while(seams_removed < width_diff):
+
+                img_gif = img.copy()
+
+                try:
+                    start_time = time.clock()
+                except AttributeError:
+                    start_time = time.time()
+
+                energy_map = self.energy_function(img, self.importance_map, mask, energy, self.pool)
+                for i in range(seams_removed // 10):
+                    map_, backtrack = self.seam_map_function(img, energy_map)
+                    mask = self.carve_function(img, map_, backtrack)
+                    img, energy, importance_map = self.drop_seam(img, mask, energy, importance_map)
+
+                    try:
+                        self.time_by_step.append(time.clock() - start_time)
+                    except AttributeError:
+                        self.time_by_step.append(time.time() - start_time)
+
+                    img_gif[np.stack([mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
+
+                    if rotated:
+                        self.images_for_gif.append(rotate_image(img_gif, -90))
+                    else:
+                        self.images_for_gif.append(img_gif)
+
+            self.importance_map = importance_map
+
+        elif width_diff < 0:
+
+            img_tmp = img.copy()
+            masks = []
+
+            for i in range(np.abs(width_diff)):
+
+                mask, energy = self.get_seam_to_drop(img_tmp, mask, energy)
+                masks.append(mask)
+                img_tmp, energy, importance_map = self.drop_seam(img_tmp, mask, energy, importance_map)
+
+            while len(masks) > 0:
+
+                current_mask = masks.pop(0)
+
+                img_gif = img.copy()
+                img_gif[np.stack([current_mask] * 3, axis=2)[:, :, 0] == False] = (255, 0, 0)
+
+                img = self.add_seam_to_img(img, current_mask)
+                self.importance_map = self.update_importance_map(current_mask)
+
+                if rotated:
+                    self.images_for_gif.append(rotate_image(img_gif, -90))
+                else:
+                    self.images_for_gif.append(img_gif)
+
+                masks = self.update_mask(current_mask, masks)
+
+        return img.astype(np.uint8)
+
+    def find_low_energy_window(self, energy, window_size):
+        min_window_starts_from = 0
+        min_energy = 10000000000
+        for i in range(0, energy.shape[1] - window_size):
+            curr_energy = np.sum(energy[:,i:i+window_size])
+            if curr_energy < min_energy:
+                min_energy = curr_energy
+                min_window_starts_from = i
+        return min_window_starts_from
+
+
     def get_seam_to_drop(self, img, prev_mask, prev_energy):
 
         energy_map = self.energy_function(img, self.importance_map, prev_mask, prev_energy, self.pool)
