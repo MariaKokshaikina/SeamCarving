@@ -242,19 +242,25 @@ class SeamCarve:
 
         return new_masks
 
+    def get_new_img_filename(self):
+        return f'{IMAGES_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.jpg'
+
+    def get_gif_filename(self):
+        return f'{GIFS_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.gif'
+
     def save_result(self, gif_fps=10):
 
         if not os.path.exists(IMAGES_DIR):
             os.mkdir(IMAGES_DIR)
 
-        img_filename = f'{IMAGES_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.jpg'
+        img_filename = self.get_new_img_filename()
         self.final_image.save(img_filename)
 
         if self.save_gif:
             if not os.path.exists(GIFS_DIR):
                 os.mkdir(GIFS_DIR)
 
-            gif_filename = f'{GIFS_DIR}/{self.image_name}_w{self.original_width}to{self.new_width}_h{self.original_height}to{self.new_height}_{self.name_suffix}.gif'
+            gif_filename = self.get_gif_filename()
             imageio.mimwrite(gif_filename, map(lambda x: x.astype(np.uint8), self.images_for_gif), fps=gif_fps)
         else:
             gif_filename = None
