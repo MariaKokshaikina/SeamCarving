@@ -85,7 +85,7 @@ class SeamCarve:
 
         if height_diff != 0:
             rotated_img = rotate_image(img, 90)
-            self.importance_map = self.importance_map.T
+            self.importance_map = rotate_image(self.importance_map, 90)
             img = self.resize_img_width(rotated_img, height_diff, rotated=True)
             img = rotate_image(img, -90)
 
