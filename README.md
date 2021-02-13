@@ -17,4 +17,4 @@ stats_dir: path to dir for saving stats
 pool_processes: number of pool processes for parallel running
 ```
 
-Check out `Experiments.ipynb` notebook to work in Jupyter with visual examples or `experiments_different_images.py` if you want to process dozen of images/sizes. 
+Check out `Demo.ipynb` notebook to work in Jupyter with visual examples or `experiments_different_images.py` if you want to process dozen of images/sizes. 
